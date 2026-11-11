@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMART HEART | Monitor de simulación</title>
+<style>
+:root{--bg:#080d18;--panel:#111a2b;--line:#26344b;--red:#ff4968;--cyan:#58e6dc;--muted:#9aabc2;--white:#eef4ff}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 50% -20%,#1b2943 0,#080d18 55%);color:var(--white);font-family:Arial,Helvetica,sans-serif;min-height:100vh;padding:24px}
+main{max-width:1100px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.brand{font-weight:800;letter-spacing:2px;font-size:clamp(22px,4vw,32px)}
+.brand span{color:var(--red)}
+.sub{color:var(--muted);font-size:12px;letter-spacing:2px;margin-top:6px}
+.status{border:1px solid #245c5a;color:var(--cyan);padding:9px 13px;border-radius:30px;font-size:12px;letter-spacing:1px}
+.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
+.card{background:linear-gradient(145deg,#141f33,#0e1727);border:1px solid var(--line);border-radius:17px;padding:20px;box-shadow:0 14px 35px #0004}
+.card h2{font-size:13px;letter-spacing:1.6px;color:var(--muted);font-weight:600;margin:0 0 18px}
+.reading{display:flex;align-items:baseline;gap:10px}
+.big{font-size:clamp(58px,9vw,92px);font-weight:700;line-height:1;color:var(--cyan);font-variant-numeric:tabular-nums}
+.unit{color:var(--muted);font-size:17px}
+.pulseicon{font-size:28px;color:var(--red);margin-left:auto;animation:beat 1s infinite}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.22)}30%{transform:scale(1)}}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
+.metric{background:#0a1220;border:1px solid #202d43;border-radius:12px;padding:13px}
+.metric strong{display:block;font-size:21px;margin-bottom:5px}
+.metric small{color:var(--muted);font-size:11px}
+.wavebox{height:220px;background:#08111d;border:1px solid #1b3543;border-radius:12px;overflow:hidden;position:relative}
+canvas{width:100%;height:100%;display:block}
+.wave-label{position:absolute;left:12px;top:10px;color:#7793a8;font-size:10px;letter-spacing:1px}
+.controls{display:flex;gap:9px;flex-wrap:wrap}
+button{border:1px solid #34445e;background:#1a2940;color:var(--white);border-radius:10px;padding:11px 14px;font-weight:600;cursor:pointer}
+button:hover{border-color:var(--cyan)}
+button.active{background:#173c42;border-color:var(--cyan);color:var(--cyan)}
+.range{width:100%;accent-color:var(--cyan);margin:15px 0}
+.note{color:var(--muted);font-size:12px;line-height:1.5;margin-top:16px}
+.full{grid-column:1/-1}
+.footer{text-align:center;color:#74849b;font-size:11px;margin:18px 0 5px;letter-spacing:.5px}
+@media(max-width:760px){body{padding:14px}.grid{grid-template-columns:1fr}.full{grid-column:auto}.metrics{grid-template-columns:1fr 1fr 1fr}.card{padding:16px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+ <div><div class="brand">SMART <span>HEART</span></div><div class="sub">SISTEMA DE MONITOREO · PROTOTIPO ESCOLAR</div></div>
+ <div class="status">● SIMULACIÓN ACTIVA</div>
+</header>
+<section class="grid">
+ <article class="card">
+  <h2>FRECUENCIA CARDÍACA SIMULADA</h2>
+  <div class="reading"><div class="big" id="bpm">75</div><div class="unit">BPM</div><div class="pulseicon">♥</div></div>
+  <div class="metrics">
+   <div class="metric"><strong id="state">Reposo</strong><small>ESTADO</small></div>
+   <div class="metric"><strong id="interval">800</strong><small>INTERVALO (ms)</small></div>
+   <div class="metric"><strong id="beats">0</strong><small>LATIDOS SIMULADOS</small></div>
+  </div>
+ </article>
+ <article class="card">
+  <h2>CONTROL DE SIMULACIÓN</h2>
+  <div class="controls">
+   <button class="preset active" data-bpm="75" data-state="Reposo">Reposo · 75</button>
+   <button class="preset" data-bpm="110" data-state="Actividad">Actividad · 110</button>
+   <button class="preset" data-bpm="140" data-state="Ejercicio">Ejercicio · 140</button>
+  </div>
+  <p style="margin:20px 0 4px;color:var(--muted);font-size:12px">AJUSTAR FRECUENCIA: <b id="sliderValue">75 BPM</b></p>
+  <input class="range" id="slider" type="range" min="50" max="160" value="75">
+  <div class="controls"><button id="pause">Pausar</button><button id="reset">Reiniciar contador</button></div>
+  <p class="note">Selecciona un estado o mueve el control para cambiar la frecuencia simulada.</p>
+ </article>
+ <article class="card full">
+  <h2>SEÑAL CARDÍACA ILUSTRATIVA</h2>
+  <div class="wavebox"><div class="wave-label">ONDA SIMULADA · NO ES UN ECG MÉDICO</div><canvas id="wave"></canvas></div>
+  <p class="note">La onda se genera digitalmente para representar el ritmo. No proviene de un sensor ni mide los latidos de una persona.</p>
+ </article>
+</section>
+<div class="footer">SMART HEART · PROTOTIPO DE SIMULACIÓN PARA DEMOSTRACIÓN ACADÉMICA</div>
+</main>
+<script>
+const bpmEl=document.getElementById('bpm'), intervalEl=document.getElementById('interval'),
+ stateEl=document.getElementById('state'), beatsEl=document.getElementById('beats'),
+ slider=document.getElementById('slider'), sliderValue=document.getElementById('sliderValue');
+let bpm=75, beats=0, running=true, lastBeat=performance.now(), phase=0;
+function setBpm(v, state){
+ bpm=Number(v); bpmEl.textContent=bpm; intervalEl.textContent=Math.round(60000/bpm);
+ slider.value=bpm; sliderValue.textContent=bpm+' BPM';
+ if(state) stateEl.textContent=state;
+ document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',Number(b.dataset.bpm)===bpm));
+}
+document.querySelectorAll('.preset').forEach(btn=>btn.addEventListener('click',()=>setBpm(btn.dataset.bpm,btn.dataset.state)));
+slider.addEventListener('input',()=>setBpm(slider.value,'Personalizado'));
+document.getElementById('pause').addEventListener('click',e=>{running=!running;e.target.textContent=running?'Pausar':'Reanudar';lastBeat=performance.now()});
+document.getElementById('reset').addEventListener('click',()=>{beats=0;beatsEl.textContent='0'});
+const canvas=document.getElementById('wave'),ctx=canvas.getContext('2d');
+function resize(){const r=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;canvas.width=r.width*dpr;canvas.height=r.height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
+window.addEventListener('resize',resize);resize();
+function ecg(x){const p=((x%1)+1)%1; const g=(c,w,h)=>h*Math.exp(-Math.pow((p-c)/w,2));
+ return .50 - g(.18,.025,.07) + g(.29,.012,.42) - g(.315,.018,.16) + g(.52,.075,.11);
+}
+function draw(now){
+ const w=canvas.clientWidth,h=canvas.clientHeight;
+ ctx.clearRect(0,0,w,h);
+ ctx.strokeStyle='#142b3a';ctx.lineWidth=1;
+ for(let x=0;x<w;x+=36){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+ for(let y=0;y<h;y+=36){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+ if(running && now-lastBeat>=60000/bpm){beats++;beatsEl.textContent=beats;lastBeat=now}
+ const speed=running?now/(60000/bpm)*1.0:phase;
+ if(!running) phase=speed;
+ ctx.beginPath();ctx.strokeStyle='#58e6dc';ctx.lineWidth=2.4;ctx.shadowColor='#58e6dc';ctx.shadowBlur=8;
+ for(let x=0;x<w;x++){const t=(x/w*3 + speed)%1;const y=ecg(t)*h*.72+h*.14;if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
+ ctx.stroke();ctx.shadowBlur=0;
+ requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
